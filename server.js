@@ -1,14 +1,29 @@
 const express = require('express');
 const fs = require('fs');
 const app = express();
-const port = process.env.PORT || 3000;  // Use process.env.PORT for Render or fallback to 3000 locally
+const port = process.env.PORT || 3000;
+
+// Middleware to log IP on every request
+app.use((req, res, next) => {
+  let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  
+  // x-forwarded-for can be a comma-separated list; take the first IP in the list
+  if (ip.includes(',')) {
+    ip = ip.split(',')[0];
+  }
+
+  // Log the IP
+  const logMessage = `Visitor IP: ${ip}\n`;
+  fs.appendFileSync('ips.log', logMessage, 'utf8');
+
+  console.log(logMessage); // Optionally, log to the console for debugging
+  next();
+});
 
 app.get('/', (req, res) => {
-  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  fs.appendFileSync('ips.log', `Visitor IP: ${ip}\n`);
   res.send('IP logged successfully');
 });
 
-app.listen(port, '0.0.0.0', () => {  // Bind to '0.0.0.0' to make the app accessible externally
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
 });
